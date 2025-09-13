@@ -51,7 +51,10 @@ public struct ComposeDown: AsyncParsableCommand {
     public mutating func run() async throws {
         // Read docker-compose.yml content
         guard let yamlData = fileManager.contents(atPath: dockerComposePath) else {
-            throw YamlError.dockerfileNotFound(dockerComposePath)
+            let path = URL(fileURLWithPath: dockerComposePath)
+                .deletingLastPathComponent()
+                .path
+            throw YamlError.composeFileNotFound(path)
         }
 
         // Decode the YAML file into the DockerCompose struct
