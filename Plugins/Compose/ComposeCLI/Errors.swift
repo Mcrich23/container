@@ -31,7 +31,7 @@ enum YamlError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .composeFileNotFound(let path):
-            return "docker-compose.yml not found at \(path)"
+            return "compose.yml not found at \(path)"
         }
     }
 }
