@@ -1,6 +1,6 @@
 // swift-tools-version: 6.2
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors. All rights reserved.
+// Copyright © 2025 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import PackageDescription
 let releaseVersion = ProcessInfo.processInfo.environment["RELEASE_VERSION"] ?? "0.0.0"
 let gitCommit = ProcessInfo.processInfo.environment["GIT_COMMIT"] ?? "unspecified"
 let builderShimVersion = "0.6.1"
-let scVersion = "0.7.2"
+let scVersion = "0.9.1"
 
 let package = Package(
     name: "container",
@@ -42,18 +42,11 @@ let package = Package(
         .library(name: "ContainerVersion", targets: ["ContainerVersion"]),
         .library(name: "ContainerXPC", targets: ["ContainerXPC"]),
         .library(name: "SocketForwarder", targets: ["SocketForwarder"]),
-        .library(name: "ContainerBuildReporting", targets: ["ContainerBuildReporting"]),
-        .library(name: "ContainerBuildIR", targets: ["ContainerBuildIR"]),
-        .library(name: "ContainerBuildExecutor", targets: ["ContainerBuildExecutor"]),
-        .library(name: "ContainerBuildCache", targets: ["ContainerBuildCache"]),
-        .library(name: "ContainerBuildSnapshotter", targets: ["ContainerBuildSnapshotter"]),
-        .library(name: "ContainerBuildParser", targets: ["ContainerBuildParser"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0"),
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.0"),
-        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
         .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.26.0"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.29.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.80.0"),
@@ -71,7 +64,7 @@ let package = Package(
                 "ContainerClient",
                 "ContainerCommands",
             ],
-            path: "Sources/ExecutableCLI"
+            path: "Sources/CLI"
         ),
         .target(
             name: "ContainerCommands",
@@ -90,7 +83,7 @@ let package = Package(
                 "ContainerVersion",
                 "TerminalProgress",
             ],
-            path: "Sources/CLI"
+            path: "Sources/ContainerCommands"
         ),
         .executableTarget(
             name: "container-apiserver",
@@ -274,77 +267,6 @@ let package = Package(
                 .product(name: "Containerization", package: "containerization"),
                 "ContainerClient",
                 "ContainerPersistence",
-            ]
-        ),
-        .executableTarget(
-            name: "native-builder-demo",
-            dependencies: ["ContainerBuildIR", "ContainerBuildExecutor", "ContainerBuildCache"],
-            path: "Sources/NativeBuilder/ContainerBuildDemo"
-        ),
-        .target(
-            name: "ContainerBuildReporting",
-            dependencies: [],
-            path: "Sources/NativeBuilder/ContainerBuildReporting",
-        ),
-        .target(
-            name: "ContainerBuildIR",
-            dependencies: [
-                "ContainerBuildReporting",
-                .product(name: "ContainerizationOCI", package: "containerization"),
-                .product(name: "Crypto", package: "swift-crypto"),
-            ],
-            path: "Sources/NativeBuilder/ContainerBuildIR",
-        ),
-        .target(
-            name: "ContainerBuildExecutor",
-            dependencies: [
-                "ContainerBuildReporting",
-                "ContainerBuildIR",
-                "ContainerBuildSnapshotter",
-                "ContainerBuildCache",
-                .product(name: "ContainerizationOCI", package: "containerization"),
-            ],
-            path: "Sources/NativeBuilder/ContainerBuildExecutor",
-        ),
-        .target(
-            name: "ContainerBuildCache",
-            dependencies: [
-                "ContainerBuildIR",
-                "ContainerBuildSnapshotter",
-                .product(name: "ContainerizationOCI", package: "containerization"),
-                .product(name: "ContainerizationExtras", package: "containerization"),
-                .product(name: "Crypto", package: "swift-crypto"),
-            ],
-            path: "Sources/NativeBuilder/ContainerBuildCache",
-        ),
-        .target(
-            name: "ContainerBuildSnapshotter",
-            dependencies: [
-                "ContainerBuildIR",
-                .product(name: "ContainerizationOCI", package: "containerization"),
-                .product(name: "ContainerizationArchive", package: "containerization"),
-                .product(name: "Crypto", package: "swift-crypto"),
-                "ContainerClient",
-            ],
-            path: "Sources/NativeBuilder/ContainerBuildSnapshotter",
-        ),
-        .target(
-            name: "ContainerBuildParser",
-            dependencies: [
-                "ContainerBuildIR"
-            ],
-            path: "Sources/NativeBuilder/ContainerBuildParser",
-        ),
-        .testTarget(
-            name: "NativeBuilderTests",
-            dependencies: [
-                "ContainerBuildIR",
-                "ContainerBuildExecutor",
-                "ContainerBuildCache",
-                "ContainerBuildReporting",
-                "ContainerBuildParser",
-                "ContainerBuildSnapshotter",
-                "ContainerClient",
             ]
         ),
         .target(

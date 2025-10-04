@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors. All rights reserved.
+// Copyright © 2025 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ import ContainerNetworkService
 /// A snapshot of a sandbox and its resources.
 public struct SandboxSnapshot: Codable, Sendable {
     /// The runtime status of the sandbox.
-    public let status: RuntimeStatus
+    public var status: RuntimeStatus
     /// Network attachments for the sandbox.
-    public let networks: [Attachment]
+    public var networks: [Attachment]
     /// Containers placed in the sandbox.
-    public let containers: [ContainerSnapshot]
+    public var containers: [ContainerSnapshot]
 
     public init(
         status: RuntimeStatus,

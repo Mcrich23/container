@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors. All rights reserved.
+// Copyright © 2025 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 //===----------------------------------------------------------------------===//
 
 public enum SandboxRoutes: String {
+    /// Create an xpc endpoint to the sandbox instance.
+    case createEndpoint = "com.apple.container.sandbox/createEndpoint"
     /// Bootstrap the sandbox instance and create the init process.
     case bootstrap = "com.apple.container.sandbox/bootstrap"
     /// Create a process in the sandbox.
@@ -35,4 +37,6 @@ public enum SandboxRoutes: String {
     case exec = "com.apple.container.sandbox/exec"
     /// Dial a vsock port in the sandbox.
     case dial = "com.apple.container.sandbox/dial"
+    /// Shutdown the sandbox service process.
+    case shutdown = "com.apple.container.sandbox/shutdown"
 }

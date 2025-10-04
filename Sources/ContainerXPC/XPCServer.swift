@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors. All rights reserved.
+// Copyright © 2025 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,8 +35,15 @@ public struct XPCServer: Sendable {
         let connection = xpc_connection_create_mach_service(
             identifier,
             nil,
-            UInt64(XPC_CONNECTION_MACH_SERVICE_LISTENER))
+            UInt64(XPC_CONNECTION_MACH_SERVICE_LISTENER)
+        )
 
+        self.routes = routes
+        self.connection = connection
+        self.log = log
+    }
+
+    public init(connection: xpc_connection_t, routes: [String: RouteHandler], log: Logging.Logger) {
         self.routes = routes
         self.connection = connection
         self.log = log
@@ -71,6 +78,7 @@ public struct XPCServer: Sendable {
         lock.withLock {
             xpc_connection_activate(self.connection)
         }
+
         try await withThrowingDiscardingTaskGroup { group in
             for await conn in connections {
                 // `conn` isn't used concurrently.

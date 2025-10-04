@@ -14,7 +14,7 @@ The tool consumes and produces [OCI-compatible container images](https://github.
 
 You need a Mac with Apple silicon to run `container`. To build it, see the [BUILDING](./BUILDING.md) document.
 
-`container` is supported on macOS 26, since it takes advantage of new features and enhancements to virtualization and networking in this release. We do not support older versions of macOS and the `container` maintainers typically will not address issues that cannot be reproduced on the latest macOS 26 beta.
+`container` is supported on macOS 26, since it takes advantage of new features and enhancements to virtualization and networking in this release. We do not support older versions of macOS and the `container` maintainers typically will not address issues that cannot be reproduced on the macOS 26.
 
 ### Install or upgrade
 
@@ -57,6 +57,11 @@ uninstall-container.sh -k
 - Browse the [full command reference](./docs/command-reference.md).
 - [Build and run](./BUILDING.md) `container` on your own development system.
 - View the project [API documentation](https://apple.github.io/container/documentation/).
+
+> [!IMPORTANT]
+> The links above are for the CURRENT BRANCH's documentation. To find documentation for official releases, find the target release on the [Release Page](https://github.com/apple/container/releases) and click the tag corresponding to your release version. 
+>
+> Example: [release 0.4.1 tag](https://github.com/apple/container/tree/0.4.1)
 
 ## Contributing
 

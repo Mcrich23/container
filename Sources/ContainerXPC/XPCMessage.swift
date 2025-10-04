@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors. All rights reserved.
+// Copyright © 2025 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -198,6 +198,20 @@ extension XPCMessage {
     public func set(key: String, value: Int64) {
         lock.withLock {
             xpc_dictionary_set_int64(self.object, key, value)
+        }
+    }
+
+    public func date(key: String) -> Date {
+        lock.withLock {
+            let nsSinceEpoch = xpc_dictionary_get_date(self.object, key)
+            return Date(timeIntervalSince1970: TimeInterval(nsSinceEpoch) / 1_000_000_000)
+        }
+    }
+
+    public func set(key: String, value: Date) {
+        lock.withLock {
+            let nsSinceEpoch = Int64(value.timeIntervalSince1970 * 1_000_000_000)
+            xpc_dictionary_set_date(self.object, key, nsSinceEpoch)
         }
     }
 

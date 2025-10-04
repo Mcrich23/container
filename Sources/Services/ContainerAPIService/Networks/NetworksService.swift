@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors. All rights reserved.
+// Copyright © 2025 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,11 @@ public actor NetworksService {
         self.log = log
 
         try FileManager.default.createDirectory(at: resourceRoot, withIntermediateDirectories: true)
-        self.store = try FilesystemEntityStore<NetworkConfiguration>(path: resourceRoot, type: "network", log: log)
+        self.store = try FilesystemEntityStore<NetworkConfiguration>(
+            path: resourceRoot,
+            type: "network",
+            log: log
+        )
 
         let networkPlugin =
             pluginLoader
