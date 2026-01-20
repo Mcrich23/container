@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,8 @@
 //===----------------------------------------------------------------------===//
 
 import ArgumentParser
-import ContainerClient
+import ContainerAPIClient
+import ContainerResource
 import Containerization
 import ContainerizationError
 import ContainerizationExtras
@@ -47,6 +48,9 @@ extension Application {
         @OptionGroup(title: "Progress options")
         var progressFlags: Flags.Progress
 
+        @OptionGroup(title: "Image fetch options")
+        var imageFetchFlags: Flags.ImageFetch
+
         @OptionGroup
         var global: Flags.Global
 
@@ -61,9 +65,9 @@ extension Application {
             let id = Utility.createContainerID(name: self.managementFlags.name)
 
             var progressConfig: ProgressConfig
-            if progressFlags.disableProgressUpdates {
-                progressConfig = try ProgressConfig(disableProgressUpdates: progressFlags.disableProgressUpdates)
-            } else {
+            switch self.progressFlags.progress {
+            case .none: progressConfig = try ProgressConfig(disableProgressUpdates: true)
+            case .ansi:
                 progressConfig = try ProgressConfig(
                     showTasks: true,
                     showItems: true,
@@ -97,6 +101,7 @@ extension Application {
                 management: managementFlags,
                 resource: resourceFlags,
                 registry: registryFlags,
+                imageFetch: imageFetchFlags,
                 progressUpdate: progress.handler
             )
 

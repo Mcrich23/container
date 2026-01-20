@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 //===----------------------------------------------------------------------===//
 
 import ArgumentParser
-import ContainerClient
+import ContainerAPIClient
 import ContainerizationError
 import Foundation
 
@@ -41,7 +41,7 @@ extension Application {
                 try resolver.deleteDomain(name: domainName)
                 print(domainName)
             } catch {
-                throw ContainerizationError(.invalidState, message: "cannot create domain (try sudo?)")
+                throw ContainerizationError(.invalidState, message: "cannot delete domain (try sudo?)")
             }
 
             do {

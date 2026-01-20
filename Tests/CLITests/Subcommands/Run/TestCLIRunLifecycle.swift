@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,6 +41,45 @@ class TestCLIRunLifecycle: CLITest {
                 try? self.doStop(name: name)
             }
             let _ = try self.doExec(name: name, cmd: ["date"])
+            try self.doStop(name: name)
+        }
+    }
+
+    @Test func testStartIdempotent() throws {
+        let name = getTestName()
+
+        #expect(throws: Never.self, "expected container run to succeed") {
+            try self.doLongRun(name: name, args: [])
+            defer {
+                try? self.doStop(name: name)
+            }
+            try self.waitForContainerRunning(name)
+
+            let (_, output, _, status) = try self.run(arguments: ["start", name])
+            #expect(status == 0, "expected start to succeed on already running container")
+            #expect(output.trimmingCharacters(in: .whitespacesAndNewlines) == name, "expected output to be container name")
+
+            // Don't care about the resp, just that the container is still there and not cleaned up.
+            let _ = try inspectContainer(name)
+
+            try self.doStop(name: name)
+        }
+    }
+
+    @Test func testStartIdempotentAttachFails() throws {
+        let name = getTestName()
+
+        #expect(throws: Never.self, "expected container run to succeed") {
+            try self.doLongRun(name: name, args: [])
+            defer {
+                try? self.doStop(name: name)
+            }
+            try self.waitForContainerRunning(name)
+
+            let (_, _, error, status) = try self.run(arguments: ["start", "-a", name])
+            #expect(status != 0, "expected start with attach to fail on already running container")
+            #expect(error.contains("attach is currently unsupported on already running containers"), "expected error message about attach not supported")
+
             try self.doStop(name: name)
         }
     }

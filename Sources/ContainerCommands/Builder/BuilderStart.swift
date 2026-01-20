@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
 //===----------------------------------------------------------------------===//
 
 import ArgumentParser
+import ContainerAPIClient
 import ContainerBuild
-import ContainerClient
-import ContainerNetworkService
 import ContainerPersistence
+import ContainerResource
 import Containerization
 import ContainerizationError
 import ContainerizationExtras
@@ -74,7 +74,9 @@ extension Application {
 
             let builderImage: String = DefaultsStore.get(key: .defaultBuilderImage)
             let systemHealth = try await ClientHealthCheck.ping(timeout: .seconds(10))
-            let exportsMount: String = systemHealth.appRoot.appendingPathComponent(".build").absolutePath()
+            let exportsMount: String = systemHealth.appRoot
+                .appendingPathComponent(Application.BuilderCommand.builderResourceDir)
+                .absolutePath()
 
             if !FileManager.default.fileExists(atPath: exportsMount) {
                 try FileManager.default.createDirectory(
@@ -86,10 +88,26 @@ extension Application {
 
             let builderPlatform = ContainerizationOCI.Platform(arch: "arm64", os: "linux", variant: "v8")
 
+            var targetEnvVars: [String] = []
+            if let buildkitColors = ProcessInfo.processInfo.environment["BUILDKIT_COLORS"] {
+                targetEnvVars.append("BUILDKIT_COLORS=\(buildkitColors)")
+            }
+            if ProcessInfo.processInfo.environment["NO_COLOR"] != nil {
+                targetEnvVars.append("NO_COLOR=true")
+            }
+            targetEnvVars.sort()
+
             let existingContainer = try? await ClientContainer.get(id: "buildkit")
             if let existingContainer {
                 let existingImage = existingContainer.configuration.image.reference
                 let existingResources = existingContainer.configuration.resources
+                let existingEnv = existingContainer.configuration.initProcess.environment
+
+                let existingManagedEnv = existingEnv.filter { envVar in
+                    envVar.hasPrefix("BUILDKIT_COLORS=") || envVar.hasPrefix("NO_COLOR=")
+                }.sorted()
+
+                let envChanged = existingManagedEnv != targetEnvVars
 
                 // Check if we need to recreate the builder due to different image
                 let imageChanged = existingImage != builderImage
@@ -113,7 +131,7 @@ extension Application {
 
                 switch existingContainer.status {
                 case .running:
-                    guard imageChanged || cpuChanged || memChanged else {
+                    guard imageChanged || cpuChanged || memChanged || envChanged else {
                         // If image, mem and cpu are the same, continue using the existing builder
                         return
                     }
@@ -123,7 +141,7 @@ extension Application {
                 case .stopped:
                     // If the builder is stopped and matches our requirements, start it
                     // Otherwise, delete it and create a new one
-                    guard imageChanged || cpuChanged || memChanged else {
+                    guard imageChanged || cpuChanged || memChanged || envChanged else {
                         try await existingContainer.startBuildKit(progressUpdate, nil)
                         return
                     }
@@ -138,27 +156,15 @@ extension Application {
                 }
             }
 
-            let shimArguments: [String] = [
+            let useRosetta = DefaultsStore.getBool(key: .buildRosetta) ?? true
+            let shimArguments = [
                 "--debug",
                 "--vsock",
-            ]
+                useRosetta ? nil : "--enable-qemu",
+            ].compactMap { $0 }
 
             let id = "buildkit"
-            try ContainerClient.Utility.validEntityName(id)
-
-            let processConfig = ProcessConfiguration(
-                executable: "/usr/local/bin/container-builder-shim",
-                arguments: shimArguments,
-                environment: [],
-                workingDirectory: "/",
-                terminal: false,
-                user: .id(uid: 0, gid: 0)
-            )
-
-            let resources = try Parser.resources(
-                cpus: cpus,
-                memory: memory
-            )
+            try ContainerAPIClient.Utility.validEntityName(id)
 
             let image = try await ClientImage.fetch(
                 reference: builderImage,
@@ -176,12 +182,31 @@ extension Application {
                 platform: builderPlatform,
                 progressUpdate: ProgressTaskCoordinator.handler(for: unpackTask, from: progressUpdate)
             )
-            let imageConfig = ImageDescription(
+
+            let imageDesc = ImageDescription(
                 reference: builderImage,
                 descriptor: image.descriptor
             )
 
-            var config = ContainerConfiguration(id: id, image: imageConfig, process: processConfig)
+            let imageConfig = try await image.config(for: builderPlatform).config
+            var environment = imageConfig?.env ?? []
+            environment.append(contentsOf: targetEnvVars)
+
+            let processConfig = ProcessConfiguration(
+                executable: "/usr/local/bin/container-builder-shim",
+                arguments: shimArguments,
+                environment: environment,
+                workingDirectory: "/",
+                terminal: false,
+                user: .id(uid: 0, gid: 0)
+            )
+
+            let resources = try Parser.resources(
+                cpus: cpus,
+                memory: memory
+            )
+
+            var config = ContainerConfiguration(id: id, image: imageDesc, process: processConfig)
             config.resources = resources
             config.mounts = [
                 .init(
@@ -198,15 +223,15 @@ extension Application {
                 ),
             ]
             // Enable Rosetta only if the user didn't ask to disable it
-            config.rosetta = DefaultsStore.getBool(key: .buildRosetta) ?? true
+            config.rosetta = useRosetta
 
             let network = try await ClientNetwork.get(id: ClientNetwork.defaultNetworkName)
             guard case .running(_, let networkStatus) = network else {
                 throw ContainerizationError(.invalidState, message: "default network is not running")
             }
             config.networks = [AttachmentConfiguration(network: network.id, options: AttachmentOptions(hostname: id))]
-            let subnet = try CIDRAddress(networkStatus.address)
-            let nameserver = IPv4Address(fromValue: subnet.lower.value + 1).description
+            let subnet = networkStatus.ipv4Subnet
+            let nameserver = IPv4Address(subnet.lower.value + 1).description
             let nameservers = [nameserver]
             config.dns = ContainerConfiguration.DNSConfiguration(nameservers: nameservers)
 

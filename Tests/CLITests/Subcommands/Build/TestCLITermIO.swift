@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,24 +20,24 @@ import Testing
 
 extension TestCLIRunBase {
     class TestCLITermIO: TestCLIRunBase {
-        override var ContainerImage: String {
+        override var containerImage: String {
             "ghcr.io/linuxcontainers/alpine:3.20"
         }
 
-        override var Interactive: Bool {
+        override var interactive: Bool {
             true
         }
 
-        override var Tty: Bool {
+        override var tty: Bool {
             true
         }
 
-        override var Command: [String]? {
+        override var command: [String]? {
             ["/bin/sh"]
         }
 
-        override var DisableProgressUpdates: Bool {
-            true
+        override var progress: String {
+            "none"
         }
 
         @Test func testTermIODoesNotPanic() async throws {

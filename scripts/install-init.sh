@@ -1,5 +1,5 @@
 #! /bin/bash -e
-# Copyright © 2025 Apple Inc. and the container project authors.
+# Copyright © 2025-2026 Apple Inc. and the container project authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 
 SWIFT="/usr/bin/swift"
 IMAGE_NAME="vminit:latest"
-DESTDIR="${1:-$(git rev-parse --show-toplevel)/bin}"
-mkdir -p "${DESTDIR}"
+DEST_DIR="${1:-$(git rev-parse --show-toplevel)/bin}"
+mkdir -p "${DEST_DIR}"
 
 CONTAINERIZATION_VERSION="$(${SWIFT} package show-dependencies --format json | jq -r '.dependencies[] | select(.identity == "containerization") | .version')"
 if [ "${CONTAINERIZATION_VERSION}" == "unspecified" ] ; then

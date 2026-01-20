@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 //===----------------------------------------------------------------------===//
 
 import CVersion
+import ContainerVersion
 import ContainerizationError
 import Foundation
 
@@ -29,6 +30,7 @@ public enum DefaultsStore {
         case defaultKernelBinaryPath = "kernel.binaryPath"
         case defaultKernelURL = "kernel.url"
         case defaultSubnet = "network.subnet"
+        case defaultIPv6Subnet = "network.subnetv6"
         case defaultRegistryDomain = "registry.domain"
     }
 
@@ -41,8 +43,10 @@ public enum DefaultsStore {
     }
 
     public static func get(key: DefaultsStore.Keys) -> String {
-        let current = udSuite.string(forKey: key.rawValue)
-        return current ?? key.defaultValue
+        let appBundle = Bundle.appBundle(executableURL: CommandLine.executablePathUrl)
+        return udSuite.string(forKey: key.rawValue)
+            ?? appBundle?.infoDictionary?["\(Self.userDefaultDomain).\(key.rawValue)"] as? String
+            ?? key.defaultValue
     }
 
     public static func getOptional(key: DefaultsStore.Keys) -> String? {
@@ -54,8 +58,12 @@ public enum DefaultsStore {
     }
 
     public static func getBool(key: DefaultsStore.Keys) -> Bool? {
-        guard udSuite.object(forKey: key.rawValue) != nil else { return nil }
-        return udSuite.bool(forKey: key.rawValue)
+        if udSuite.object(forKey: key.rawValue) != nil {
+            return udSuite.bool(forKey: key.rawValue)
+        }
+        let appBundle = Bundle.appBundle(executableURL: CommandLine.executablePathUrl)
+        return appBundle?.infoDictionary?["\(Self.userDefaultDomain).\(key.rawValue)"] as? Bool
+            ?? Bool(key.defaultValue)
     }
 
     public static func allValues() -> [DefaultsStoreValue] {
@@ -66,6 +74,7 @@ public enum DefaultsStore {
             (.defaultKernelBinaryPath, { Self.get(key: $0) }),
             (.defaultKernelURL, { Self.get(key: $0) }),
             (.defaultSubnet, { Self.getOptional(key: $0) }),
+            (.defaultIPv6Subnet, { Self.getOptional(key: $0) }),
             (.defaultDNSDomain, { Self.getOptional(key: $0) }),
             (.defaultRegistryDomain, { Self.get(key: $0) }),
         ]
@@ -77,7 +86,7 @@ public enum DefaultsStore {
 
     private static var udSuite: UserDefaults {
         guard let ud = UserDefaults.init(suiteName: self.userDefaultDomain) else {
-            fatalError("Failed to initialize UserDefaults for domain \(self.userDefaultDomain)")
+            fatalError("failed to initialize UserDefaults for domain \(self.userDefaultDomain)")
         }
         return ud
     }
@@ -124,7 +133,9 @@ extension DefaultsStore.Keys {
         case .defaultKernelURL:
             return "The URL for the kernel file to install, or the URL for an archive containing the kernel file."
         case .defaultSubnet:
-            return "Default subnet for IP allocation (used on macOS 15 only)."
+            return "Default subnet for IPv4 allocation."
+        case .defaultIPv6Subnet:
+            return "Default IPv6 network prefix."
         case .defaultRegistryDomain:
             return "The default registry to use for image references that do not specify a registry."
         }
@@ -145,6 +156,8 @@ extension DefaultsStore.Keys {
         case .defaultKernelURL:
             return String.self
         case .defaultSubnet:
+            return String.self
+        case .defaultIPv6Subnet:
             return String.self
         case .defaultRegistryDomain:
             return String.self
@@ -173,6 +186,8 @@ extension DefaultsStore.Keys {
             return "https://github.com/kata-containers/kata-containers/releases/download/3.17.0/kata-static-3.17.0-arm64.tar.xz"
         case .defaultSubnet:
             return "192.168.64.1/24"
+        case .defaultIPv6Subnet:
+            return "fd00::/64"
         case .defaultRegistryDomain:
             return "docker.io"
         }

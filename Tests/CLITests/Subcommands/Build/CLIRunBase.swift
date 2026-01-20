@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,28 +22,28 @@ class TestCLIRunBase: CLITest {
     var terminal: Terminal!
     var containerName: String = UUID().uuidString
 
-    var ContainerImage: String {
+    var containerImage: String {
         fatalError("Subclasses must override this property")
     }
 
-    var Interactive: Bool {
+    var interactive: Bool {
         false
     }
 
-    var Tty: Bool {
+    var tty: Bool {
         false
     }
 
-    var Entrypoint: String? {
+    var entrypoint: String? {
         nil
     }
 
-    var Command: [String]? {
+    var command: [String]? {
         nil
     }
 
-    var DisableProgressUpdates: Bool {
-        false
+    var progress: String {
+        "ansi"
     }
 
     override init() throws {
@@ -108,24 +108,23 @@ class TestCLIRunBase: CLITest {
             name,
         ]
 
-        if Interactive && Tty {
+        if interactive && tty {
             arguments.append("-it")
         } else {
-            if Interactive { arguments.append("-i") }
-            if Tty { arguments.append("-t") }
+            if interactive { arguments.append("-i") }
+            if tty { arguments.append("-t") }
         }
 
-        if DisableProgressUpdates {
-            arguments.append("--disable-progress-updates")
-        }
+        arguments.append("--progress")
+        arguments.append(progress)
 
-        if let entrypoint = Entrypoint {
+        if let entrypoint = entrypoint {
             arguments += ["--entrypoint", entrypoint]
         }
 
-        arguments.append(ContainerImage)
+        arguments.append(containerImage)
 
-        if let command = Command {
+        if let command = command {
             arguments += command
         }
         return try runInteractive(arguments: arguments)

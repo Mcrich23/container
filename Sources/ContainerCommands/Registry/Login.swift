@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 //===----------------------------------------------------------------------===//
 
 import ArgumentParser
-import ContainerClient
+import ContainerAPIClient
 import Containerization
 import ContainerizationError
 import ContainerizationOCI
@@ -69,10 +69,10 @@ extension Application {
             let scheme = try RequestScheme(registry.scheme).schemeFor(host: server)
             let _url = "\(scheme)://\(server)"
             guard let url = URL(string: _url) else {
-                throw ContainerizationError(.invalidArgument, message: "Cannot convert \(_url) to URL")
+                throw ContainerizationError(.invalidArgument, message: "cannot convert \(_url) to URL")
             }
             guard let host = url.host else {
-                throw ContainerizationError(.invalidArgument, message: "Invalid host \(server)")
+                throw ContainerizationError(.invalidArgument, message: "invalid host \(server)")
             }
 
             let client = RegistryClient(

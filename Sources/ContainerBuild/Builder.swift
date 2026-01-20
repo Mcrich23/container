@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the container project authors.
+// Copyright © 2025-2026 Apple Inc. and the container project authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // limitations under the License.
 //===----------------------------------------------------------------------===//
 
-import ContainerClient
+import ContainerAPIClient
 import Containerization
 import ContainerizationOCI
 import ContainerizationOS
@@ -243,7 +243,7 @@ public struct Builder: Sendable {
         public let noCache: Bool
         public let platforms: [Platform]
         public let terminal: Terminal?
-        public let tag: String
+        public let tags: [String]
         public let target: String
         public let quiet: Bool
         public let exports: [BuildExport]
@@ -260,7 +260,7 @@ public struct Builder: Sendable {
             noCache: Bool,
             platforms: [Platform],
             terminal: Terminal?,
-            tag: String,
+            tags: [String],
             target: String,
             quiet: Bool,
             exports: [BuildExport],
@@ -276,7 +276,7 @@ public struct Builder: Sendable {
             self.noCache = noCache
             self.platforms = platforms
             self.terminal = terminal
-            self.tag = tag
+            self.tags = tags
             self.target = target
             self.quiet = quiet
             self.exports = exports
@@ -312,9 +312,11 @@ extension CallOptions {
             ("context", URL(filePath: config.contextDir).path(percentEncoded: false)),
             ("dockerfile", config.dockerfile.base64EncodedString()),
             ("progress", config.terminal != nil ? "tty" : "plain"),
-            ("tag", config.tag),
             ("target", config.target),
         ]
+        for tag in config.tags {
+            headers.append(("tag", tag))
+        }
         for platform in config.platforms {
             headers.append(("platforms", platform.description))
         }
