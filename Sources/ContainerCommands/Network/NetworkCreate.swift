@@ -23,13 +23,16 @@ import Foundation
 import TerminalProgress
 
 extension Application {
-    public struct NetworkCreate: AsyncParsableCommand {
+    public struct NetworkCreate: AsyncLoggableCommand {
         public static let configuration = CommandConfiguration(
             commandName: "create",
             abstract: "Create a new network")
 
         @Option(name: .customLong("label"), help: "Set metadata for a network")
         var labels: [String] = []
+
+        @Flag(name: .customLong("internal"), help: "Restrict to host-only network")
+        var hostOnly: Bool = false
 
         @Option(
             name: .customLong("subnet"), help: "Set subnet for a network",
@@ -46,7 +49,7 @@ extension Application {
         var ipv6Subnet: CIDRv6? = nil
 
         @OptionGroup
-        var global: Flags.Global
+        public var logOptions: Flags.Logging
 
         @Argument(help: "Network name")
         var name: String
@@ -55,9 +58,10 @@ extension Application {
 
         public func run() async throws {
             let parsedLabels = Utility.parseKeyValuePairs(labels)
+            let mode: NetworkMode = hostOnly ? .hostOnly : .nat
             let config = try NetworkConfiguration(
                 id: self.name,
-                mode: .nat,
+                mode: mode,
                 ipv4Subnet: ipv4Subnet,
                 ipv6Subnet: ipv6Subnet,
                 labels: parsedLabels

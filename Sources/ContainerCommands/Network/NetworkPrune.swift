@@ -19,7 +19,7 @@ import ContainerAPIClient
 import Foundation
 
 extension Application.NetworkCommand {
-    public struct NetworkPrune: AsyncParsableCommand {
+    public struct NetworkPrune: AsyncLoggableCommand {
         public init() {}
         public static let configuration = CommandConfiguration(
             commandName: "prune",
@@ -27,7 +27,7 @@ extension Application.NetworkCommand {
         )
 
         @OptionGroup
-        var global: Flags.Global
+        public var logOptions: Flags.Logging
 
         public func run() async throws {
             let allContainers = try await ClientContainer.list()
@@ -41,7 +41,7 @@ extension Application.NetworkCommand {
             }
 
             let networksToPrune = allNetworks.filter { network in
-                network.id != ClientNetwork.defaultNetworkName && !networksInUse.contains(network.id)
+                !network.isBuiltin && !networksInUse.contains(network.id)
             }
 
             var prunedNetworks = [String]()

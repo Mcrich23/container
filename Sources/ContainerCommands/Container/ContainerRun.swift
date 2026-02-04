@@ -27,7 +27,7 @@ import NIOPosix
 import TerminalProgress
 
 extension Application {
-    public struct ContainerRun: AsyncParsableCommand {
+    public struct ContainerRun: AsyncLoggableCommand {
         public init() {}
         public static let configuration = CommandConfiguration(
             commandName: "run",
@@ -52,7 +52,7 @@ extension Application {
         var imageFetchFlags: Flags.ImageFetch
 
         @OptionGroup
-        var global: Flags.Global
+        public var logOptions: Flags.Logging
 
         @Argument(help: "Image name")
         var image: String
@@ -161,6 +161,7 @@ extension Application {
 
                 exitCode = try await io.handleProcess(process: process, log: log)
             } catch {
+                try? await container.delete()
                 if error is ContainerizationError {
                     throw error
                 }

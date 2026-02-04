@@ -215,6 +215,8 @@ class CLITest {
             runArgs.append(contentsOf: args)
         }
 
+        runArgs.append(contentsOf: getProxyEnvironment())
+
         if let image {
             runArgs.append(image)
         } else {
@@ -237,6 +239,7 @@ class CLITest {
         var execArgs = [
             "exec"
         ]
+        execArgs.append(contentsOf: getProxyEnvironment())
         if detach {
             execArgs.append("-d")
         }
@@ -266,12 +269,15 @@ class CLITest {
         image: String? = nil,
         args: [String]? = nil,
         volumes: [String] = [],
-        networks: [String] = []
+        networks: [String] = [],
+        ports: [String] = []
     ) throws {
         let image = image ?? alpine
         let args: [String] = args ?? ["sleep", "infinity"]
 
         var arguments = ["create", "--rm", "--name", name]
+
+        arguments.append(contentsOf: getProxyEnvironment())
 
         // Add volume mounts
         for volume in volumes {
@@ -281,6 +287,10 @@ class CLITest {
         // Add networks (can include properties like "network,mac=XX:XX:XX:XX:XX:XX")
         for network in networks {
             arguments += ["--network", network]
+        }
+
+        for port in ports {
+            arguments += ["--publish", "\(port):\(port)"]
         }
 
         arguments += [image] + args
@@ -309,6 +319,10 @@ class CLITest {
 
     func getContainerStatus(_ name: String) throws -> String {
         try inspectContainer(name).status
+    }
+
+    func getContainerId(_ name: String) throws -> String {
+        try inspectContainer(name).configuration.id
     }
 
     func inspectContainer(_ name: String) throws -> inspectOutput {
@@ -457,9 +471,12 @@ class CLITest {
         }
     }
 
-    func getClient() -> HTTPClient {
+    func getClient(useHttpProxy: Bool) -> HTTPClient {
         var httpConfiguration = HTTPClient.Configuration()
         let proxyConfig: HTTPClient.Configuration.Proxy? = {
+            guard useHttpProxy else {
+                return nil
+            }
             let proxyEnv = ProcessInfo.processInfo.environment["HTTP_PROXY"]
             guard let proxyEnv else {
                 return nil
@@ -554,5 +571,16 @@ class CLITest {
 
     func doNetworkDeleteIfExists(name: String) {
         let (_, _, _, _) = (try? run(arguments: ["network", "rm", name])) ?? (nil, "", "", 1)
+    }
+
+    private func getProxyEnvironment() -> [String] {
+        let proxyVars = Set([
+            "HTTP_PROXY", "http_proxy",
+            "HTTPS_PROXY", "https_proxy",
+            "NO_PROXY", "no_proxy",
+        ])
+        return ProcessInfo.processInfo.environment
+            .filter { (key, val) in proxyVars.contains(key) }
+            .flatMap { (key, val) in ["-e", "\(key)=\(val)"] }
     }
 }

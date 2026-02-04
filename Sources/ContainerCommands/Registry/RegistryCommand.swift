@@ -15,9 +15,10 @@
 //===----------------------------------------------------------------------===//
 
 import ArgumentParser
+import ContainerAPIClient
 
 extension Application {
-    public struct RegistryCommand: AsyncParsableCommand {
+    public struct RegistryCommand: AsyncLoggableCommand {
         public static let configuration = CommandConfiguration(
             commandName: "registry",
             abstract: "Manage registry logins",
@@ -29,5 +30,8 @@ extension Application {
         )
 
         public init() {}
+
+        @OptionGroup
+        public var logOptions: Flags.Logging
     }
 }

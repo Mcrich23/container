@@ -19,7 +19,7 @@ import ContainerizationError
 import Foundation
 
 public struct Flags {
-    public struct Global: ParsableArguments {
+    public struct Logging: ParsableArguments {
         public init() {}
 
         @Flag(name: .long, help: "Enable debug output [environment: CONTAINER_DEBUG]")
@@ -61,6 +61,15 @@ public struct Flags {
             )
         )
         public var cwd: String?
+
+        @Option(
+            name: .customLong("ulimit"),
+            help: .init(
+                "Set resource limits (format: <type>=<soft>[:<hard>])",
+                valueName: "limit"
+            )
+        )
+        public var ulimits: [String] = []
     }
 
     public struct Resource: ParsableArguments {
@@ -74,6 +83,34 @@ public struct Flags {
             help: "Amount of memory (1MiByte granularity), with optional K, M, G, T, or P suffix"
         )
         public var memory: String?
+    }
+
+    public struct DNS: ParsableArguments {
+        public init() {}
+
+        @Option(
+            name: .customLong("dns"),
+            help: .init("DNS nameserver IP address", valueName: "ip")
+        )
+        public var nameservers: [String] = []
+
+        @Option(
+            name: .customLong("dns-domain"),
+            help: .init("Default DNS domain", valueName: "domain")
+        )
+        public var domain: String? = nil
+
+        @Option(
+            name: .customLong("dns-option"),
+            help: .init("DNS options", valueName: "option")
+        )
+        public var options: [String] = []
+
+        @Option(
+            name: .customLong("dns-search"),
+            help: .init("DNS search domains", valueName: "domain")
+        )
+        public var searchDomains: [String] = []
     }
 
     public struct Registry: ParsableArguments {
@@ -99,29 +136,8 @@ public struct Flags {
         @Flag(name: .shortAndLong, help: "Run the container and detach from the process")
         public var detach = false
 
-        @Option(
-            name: .customLong("dns"),
-            help: .init("DNS nameserver IP address", valueName: "ip")
-        )
-        public var dnsNameservers: [String] = []
-
-        @Option(
-            name: .long,
-            help: .init("Default DNS domain", valueName: "domain")
-        )
-        public var dnsDomain: String? = nil
-
-        @Option(
-            name: .customLong("dns-option"),
-            help: .init("DNS options", valueName: "option")
-        )
-        public var dnsOptions: [String] = []
-
-        @Option(
-            name: .customLong("dns-search"),
-            help: .init("DNS search domains", valueName: "domain")
-        )
-        public var dnsSearchDomains: [String] = []
+        @OptionGroup
+        public var dns: Flags.DNS
 
         @Option(
             name: .long,

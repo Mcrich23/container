@@ -21,7 +21,7 @@ import ContainerizationError
 import Foundation
 
 extension Application {
-    public struct NetworkDelete: AsyncParsableCommand {
+    public struct NetworkDelete: AsyncLoggableCommand {
         public static let configuration = CommandConfiguration(
             commandName: "delete",
             abstract: "Delete one or more networks",
@@ -31,7 +31,7 @@ extension Application {
         var all = false
 
         @OptionGroup
-        var global: Flags.Global
+        public var logOptions: Flags.Logging
 
         @Argument(help: "Network names")
         var networkNames: [String] = []
@@ -56,10 +56,20 @@ extension Application {
 
             if all {
                 networks = try await ClientNetwork.list()
+                    .filter { !$0.isBuiltin }
             } else {
                 networks = try await ClientNetwork.list()
                     .filter { c in
-                        uniqueNetworkNames.contains(c.id)
+                        guard uniqueNetworkNames.contains(c.id) else {
+                            return false
+                        }
+                        guard !c.isBuiltin else {
+                            throw ContainerizationError(
+                                .invalidArgument,
+                                message: "cannot delete a builtin network: \(c.id)"
+                            )
+                        }
+                        return true
                     }
 
                 // If one of the networks requested isn't present lets throw. We don't need to do
@@ -78,14 +88,8 @@ extension Application {
                 }
             }
 
-            if uniqueNetworkNames.contains(ClientNetwork.defaultNetworkName) {
-                throw ContainerizationError(
-                    .invalidArgument,
-                    message: "cannot delete the default network"
-                )
-            }
-
             var failed = [String]()
+            let logger = log
             try await withThrowingTaskGroup(of: NetworkState?.self) { group in
                 for network in networks {
                     group.addTask {
@@ -96,7 +100,7 @@ extension Application {
                             print(network.id)
                             return nil
                         } catch {
-                            log.error("failed to delete network \(network.id): \(error)")
+                            logger.error("failed to delete network \(network.id): \(error)")
                             return network
                         }
                     }
